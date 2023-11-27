@@ -1,0 +1,29 @@
+{
+  "package": {
+    "name": "org.apache.struts:struts2-core",
+    "ecosystem": "Maven",
+    "purl": "pkg:maven/org.apache.struts/struts2-core"
+  },
+  "ranges": [
+    {
+      "type": "ECOSYSTEM",
+      "events": [
+        {
+          "introduced": "0"
+        },
+        {
+          "fixed": "2.3.20"
+        }
+      ]
+    }
+  ],
+  "versions": [
+    "2.0.11",
+    "2.0.11.1",
+    "2.0.11.2",
+    "2.0.12"
+  ],
+  "database_specific": {
+    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2022/05/GHSA-3c5c-xrq4-qhr8/GHSA-3c5c-xrq4-qhr8.json"
+  }
+}
