@@ -4,17 +4,16 @@ import java.util.List;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 
+import com.redhat.ecosystemappeng.model.Cve;
 import com.redhat.ecosystemappeng.service.CveService;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Response;
 
-@Path("/")
+@Path("/vulnerabilities")
 public class ApiEndpoint {
 
     @Inject
@@ -24,23 +23,15 @@ public class ApiEndpoint {
     CveService cveService;
 
     @POST
-    @Path("/cves")
-    public Response findByIds(List<String> vulnerabilities, @QueryParam("reload") boolean reload) {
-        return Response.ok(cveService.find(vulnerabilities, reload)).build();
+    @Path("/")
+    public List<Cve> find(List<String> vulnerabilities, @QueryParam("reload") boolean reload) {
+        return cveService.find(vulnerabilities, reload);
     }
 
     @GET
-    @Path("/sync")
-    public Response loadAll(@QueryParam("force") boolean force) {
-        executor.runAsync(() -> cveService.loadAll(force));
-        return Response.accepted().build();
-    }
-
-    @DELETE
-    @Path("/sync")
-    public Response deleteAll() {
-        executor.runAsync(() -> cveService.deleteAll());
-        return Response.accepted().build();
+    @Path("/{vulnId}")
+    public Cve get(String vulnId, @QueryParam("reload") boolean reload) {
+        return cveService.get(vulnId, reload);
     }
 
 }

@@ -16,9 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.ecosystemappeng.model.Cve;
 import com.redhat.ecosystemappeng.model.CveAliasResponse;
 import com.redhat.ecosystemappeng.model.IngestRecord;
-import com.redhat.ecosystemappeng.service.nvd.NvdFileService;
-import com.redhat.ecosystemappeng.service.osv.IngestionRepository;
-import com.redhat.ecosystemappeng.service.osv.VulnerabilityLoader;
+import com.redhat.ecosystemappeng.service.nvd.NvdService;
+import com.redhat.ecosystemappeng.service.osv.OsvGcsLoader;
+import com.redhat.ecosystemappeng.service.osv.OsvLoader;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -29,13 +29,13 @@ public class CveService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CveService.class);
 
     @Inject
-    VulnerabilityLoader vulnerabilityLoader;
+    OsvLoader osvLoader;
 
     @Inject
     CveRepository cveRepository;
 
     @Inject
-    NvdFileService nvdService;
+    NvdService nvdService;
 
     @Inject
     ObjectMapper mapper;
@@ -58,9 +58,20 @@ public class CveService {
             if (existing.containsKey(id)) {
                 return existing.get(id);
             } else {
-                return load(vulnerabilityLoader.fetch(id));
+                return load(osvLoader.getCveAlias(id));
             }
         }).toList();
+    }
+
+    public Cve get(String vulnerabilityId, boolean reload) {
+        Cve existing = null;
+        if (!reload) {
+            existing = cveRepository.findById(vulnerabilityId);
+        }
+        if (existing != null) {
+            return existing;
+        }
+        return load(osvLoader.getCveAlias(vulnerabilityId));
     }
 
     public Cve load(CveAliasResponse response) {
@@ -85,12 +96,12 @@ public class CveService {
     }
 
     public void loadAll(boolean force) {
-        VulnerabilityLoader.PROVIDERS.stream().parallel().forEach(provider -> {
+        OsvGcsLoader.PROVIDERS.stream().parallel().forEach(provider -> {
             loadProvider(provider, force);
         });
     }
 
-    public void loadProvider(String provider, boolean force) {
+    private void loadProvider(String provider, boolean force) {
         LOGGER.info("Loading {}", provider);
         try {
             var record = force ? null : ingRepo.findLatest(provider);
@@ -109,14 +120,14 @@ public class CveService {
                 ingRepo.persist(record);
                 LOGGER.info("Starting sync for {}. No previous load found", provider, record.getLastPageToken());
             }
-            var page = vulnerabilityLoader.loadPage(provider, lastToken, pageSize).toList();
+            var page = osvLoader.loadPage(provider, lastToken, pageSize).toList();
             while(page.size() > 0) {
                 page.forEach(this::load);
                 lastToken = String.format("%s/%s.json", provider, page.get(page.size() - 1).vulnId());
                 record.setProcessed(record.getProcessed() + page.size())
                         .setLastPageToken(lastToken);
                 ingRepo.update(record);
-                page = vulnerabilityLoader.loadPage(provider, lastToken, pageSize).toList();
+                page = osvLoader.loadPage(provider, lastToken, pageSize).toList();
                 LOGGER.info("Loaded {} elements for {}", page.size(), provider);
             }
             LOGGER.info("Loaded {}", provider);

@@ -22,9 +22,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class VulnerabilityLoader {
+public class OsvGcsLoader implements OsvLoader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VulnerabilityLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OsvGcsLoader.class);
 
     private static final String OSV_BUCKET = "osv-vulnerabilities";
 
@@ -40,20 +40,22 @@ public class VulnerabilityLoader {
         storage = StorageOptions.getUnauthenticatedInstance().getService();
     }
 
+    @Override
     public List<CveAliasResponse> fetch(List<String> vulnIds) {
-        return vulnIds.stream().parallel().map(this::fetch).toList();
+        return vulnIds.stream().parallel().map(this::getCveAlias).toList();
     }
 
-    public CveAliasResponse fetch(String vulnId) {
+    @Override
+    public CveAliasResponse getCveAlias(String vulnId) {
         var results = storage.list(OSV_BUCKET, Storage.BlobListOption.matchGlob(String.format("**/%s.json", vulnId)));
-        var found = results.streamAll().map(blob -> toCve(vulnId, blob)).findFirst();
+        var found = results.streamAll().map(blob -> toAlias(vulnId, blob)).findFirst();
         if (found.isPresent()) {
             return found.get();
         }
         return new CveAliasResponse(vulnId, null, null);
     }
 
-    private CveAliasResponse toCve(String vulnId, Blob blob) {
+    private CveAliasResponse toAlias(String vulnId, Blob blob) {
         try {
             JsonNode content = mapper.readTree(blob.getContent());
             var elements = content.withArray("aliases").elements();
@@ -70,6 +72,7 @@ public class VulnerabilityLoader {
         }
     }
 
+    @Override
     public Stream<CveAliasResponse> loadPage(String provider, String lastToken, long pageSize) {
         var folder = provider + "/";
         try {
@@ -89,7 +92,7 @@ public class VulnerabilityLoader {
         try {
             var vuln = mapper.readTree(blob.getContent());
             var id = vuln.get("id").asText();
-            return toCve(id, blob);
+            return toAlias(id, blob);
         } catch (IOException e) {
             LOGGER.error("Unable to parse blob {}", blob.getName(), e);
             return new CveAliasResponse(null, null, e.getMessage());

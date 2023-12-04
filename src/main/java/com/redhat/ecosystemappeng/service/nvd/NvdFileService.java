@@ -12,22 +12,25 @@ import org.slf4j.LoggerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class NvdFileService {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
-    
-    @ConfigProperty(name = "migration.nvd.file.path") Path repositoryPath;
+public class NvdFileService implements NvdService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
+
+    @ConfigProperty(name = "migration.nvd.file.path")
+    Path repositoryPath;
+
+    @Override
     public byte[] findByCve(String cve) {
         String year = cve.replace("CVE-", "");
         year = year.substring(0, year.indexOf("-"));
         var path = repositoryPath.resolve(year);
-        if(!Files.exists(path)) {
+        if (!Files.exists(path)) {
             return null;
         }
-        try(Stream<Path> walkStream = Files.walk(path)) {
-            var match = walkStream.filter(Files::isRegularFile).filter(f -> f.getFileName().toString().equals(cve + ".json")).findFirst();
-            if(match.isPresent()) {
+        try (Stream<Path> walkStream = Files.walk(path)) {
+            var match = walkStream.filter(Files::isRegularFile)
+                    .filter(f -> f.getFileName().toString().equals(cve + ".json")).findFirst();
+            if (match.isPresent()) {
                 return Files.readAllBytes(match.get());
             }
         } catch (IOException e) {
