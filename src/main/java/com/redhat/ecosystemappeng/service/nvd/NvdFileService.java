@@ -9,31 +9,29 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class NvdFileService {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
-    
-    @ConfigProperty(name = "migration.nvd.file.path") Path repositoryPath;
-    @Inject ObjectMapper mapper;
+public class NvdFileService implements NvdService {
 
-    public JsonNode findByCve(String cve) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
+
+    @ConfigProperty(name = "migration.nvd.file.path")
+    Path repositoryPath;
+
+    @Override
+    public byte[] findByCve(String cve) {
         String year = cve.replace("CVE-", "");
         year = year.substring(0, year.indexOf("-"));
         var path = repositoryPath.resolve(year);
-        if(!Files.exists(path)) {
+        if (!Files.exists(path)) {
             return null;
         }
-        try(Stream<Path> walkStream = Files.walk(path)) {
-            var match = walkStream.filter(Files::isRegularFile).filter(f -> f.getFileName().toString().equals(cve + ".json")).findFirst();
-            if(match.isPresent()) {
-                return mapper.readTree(Files.readAllBytes(match.get()));
+        try (Stream<Path> walkStream = Files.walk(path)) {
+            var match = walkStream.filter(Files::isRegularFile)
+                    .filter(f -> f.getFileName().toString().equals(cve + ".json")).findFirst();
+            if (match.isPresent()) {
+                return Files.readAllBytes(match.get());
             }
         } catch (IOException e) {
             LOGGER.warn("Unable to parse cve: ", cve, e);
