@@ -95,6 +95,10 @@ public class CveService {
         }
     }
 
+    public void purge(List<String> cves) {
+        cveRepository.deleteByCves(cves);
+    }
+
     public void loadAll(boolean force) {
         OsvGcsLoader.PROVIDERS.stream().parallel().forEach(provider -> {
             loadProvider(provider, force);

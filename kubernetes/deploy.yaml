@@ -22,9 +22,6 @@ spec:
         - name: http
           containerPort: 8080
           protocol: TCP
-        - name: management
-          containerPort: 9000
-          protocol: TCP
         resources:
           limits:
             memory: "128Mi"
@@ -55,21 +52,10 @@ spec:
         volumeMounts:
           - name: repo
             mountPath: "/repo"
-      initContainers:
-        - name: fetch-cve-repo
-          image: quay.io/ruben/ubi8-git:latest
-          command:
-            - git
-            - clone
-            - "--depth=1"
-            - "https://github.com/CVEProject/cvelistV5.git"
-            - "/repo/cvelistV5"
-          volumeMounts:
-            - name: repo
-              mountPath: "/repo"
       volumes:
         - name: repo
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: nvd-data
 ---
 apiVersion: v1
 kind: Service
@@ -85,3 +71,92 @@ spec:
     targetPort: 8080
   selector:
     app: osv-nvd-service
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nvd-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 8Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nvd-sync
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: git-job
+            image: quay.io/ruben/ubi8-git:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - /scripts/pull.sh
+            - /scripts/sync.sh
+            env:
+              - name: REPO_PATH
+                value: /repo
+              - name: REPO_URL
+                value: https://github.com/CVEProject/cvelistV5.git
+              - name: SERVICE_ENDPOINT
+                value: http://osv-nvd-service:8080/cves
+            volumeMounts:
+            - name: repo
+              mountPath: "/repo"
+            - name: scripts
+              mountPath: /scripts
+          restartPolicy: OnFailure
+          volumes:
+            - name: repo
+              persistentVolumeClaim:
+                claimName: nvd-data
+            - name: scripts
+              configMap:
+                name: fetch-nvd-repo-scripts
+                defaultMode: 0777
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nvd-clone
+spec:
+  template:
+    spec:
+      containers:
+      - name: git-job
+        image: quay.io/ruben/ubi8-git:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - /scripts/clone.sh
+        env:
+          - name: REPO_PATH
+            value: /repo
+          - name: REPO_URL
+            value: https://github.com/CVEProject/cvelistV5.git
+        volumeMounts:
+        - name: repo
+          mountPath: "/repo"
+        - name: scripts
+          mountPath: /scripts
+      restartPolicy: OnFailure
+      volumes:
+        - name: repo
+          persistentVolumeClaim:
+            claimName: nvd-data
+        - name: scripts
+          configMap:
+            name: fetch-nvd-repo-scripts
+            defaultMode: 0777
+  backoffLimit: 4
