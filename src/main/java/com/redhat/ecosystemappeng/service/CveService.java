@@ -7,13 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.bson.Document;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.ecosystemappeng.model.Cve;
+import com.redhat.ecosystemappeng.model.Vulnerability;
 import com.redhat.ecosystemappeng.model.CveAliasResponse;
 import com.redhat.ecosystemappeng.model.IngestRecord;
 import com.redhat.ecosystemappeng.service.nvd.NvdService;
@@ -24,6 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@Deprecated
 public class CveService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CveService.class);
@@ -32,7 +32,7 @@ public class CveService {
     OsvLoader osvLoader;
 
     @Inject
-    CveRepository cveRepository;
+    VulnerabilityRepository cveRepository;
 
     @Inject
     NvdService nvdService;
@@ -46,11 +46,11 @@ public class CveService {
     @ConfigProperty(name = "migration.osv.pageSize", defaultValue = "100")
     Integer pageSize;
 
-    public List<Cve> find(List<String> vulnerabilities, boolean reload) {
-        Map<String, Cve> existing;
+    public List<Vulnerability> find(List<String> vulnerabilities, boolean reload) {
+        Map<String, Vulnerability> existing;
         if (!reload) {
-            existing = cveRepository.list("id in ?1", vulnerabilities).stream()
-                    .collect(Collectors.toMap(Cve::id, cve -> cve));
+            existing = cveRepository.list(vulnerabilities).stream()
+                    .collect(Collectors.toMap(Vulnerability::vulnId, cve -> cve));
         } else {
             existing = Collections.emptyMap();
         }
@@ -63,10 +63,10 @@ public class CveService {
         }).toList();
     }
 
-    public Cve get(String vulnerabilityId, boolean reload) {
-        Cve existing = null;
+    public Vulnerability get(String vulnerabilityId, boolean reload) {
+        Vulnerability existing = null;
         if (!reload) {
-            existing = cveRepository.findById(vulnerabilityId);
+            existing = cveRepository.get(vulnerabilityId);
         }
         if (existing != null) {
             return existing;
@@ -74,29 +74,27 @@ public class CveService {
         return load(osvLoader.getCveAlias(vulnerabilityId));
     }
 
-    public Cve load(CveAliasResponse response) {
-        if (response.cve() == null) {
-            var cve = new Cve.Builder().id(response.vulnId()).created(new Date(System.currentTimeMillis())).build();
-            cveRepository.persistOrUpdate(cve);
+    public Vulnerability load(CveAliasResponse response) {
+        if (response.cveId() == null) {
+            var cve = new Vulnerability.Builder().vulnId(response.vulnId()).created(new Date(System.currentTimeMillis())).build();
+            cveRepository.save(cve);
             return cve;
         }
-        var data = nvdService.findByCve(response.cve());
+        var data = nvdService.findByCve(response.cveId());
         try {
-            var cveBuilder = new Cve.Builder().id(response.vulnId()).created(new Date(System.currentTimeMillis()));
-            if(data != null) {
-                cveBuilder.cve(mapper.readValue(data, Document.class));
+            var cveBuilder = new Vulnerability.Builder().vulnId(response.vulnId()).created(new Date(System.currentTimeMillis()));
+            if (data != null) {
+                var json = mapper.readTree(data);
+                var cve = json.get("cveMetadata").get("cveId").asText();
+                cveBuilder.cveId(cve).nvdData(json);
             }
             var cve = cveBuilder.build();
-            cveRepository.persistOrUpdate(cve);
+            cveRepository.save(cve);
             return cve;
         } catch (IOException e) {
             LOGGER.error("Unable to decode cve data for {}", response.vulnId(), e);
-            return new Cve.Builder().id(response.vulnId()).build();
+            return new Vulnerability.Builder().vulnId(response.vulnId()).build();
         }
-    }
-
-    public void purge(List<String> cves) {
-        cveRepository.deleteByCves(cves);
     }
 
     public void loadAll(boolean force) {
@@ -108,7 +106,7 @@ public class CveService {
     private void loadProvider(String provider, boolean force) {
         LOGGER.info("Loading {}", provider);
         try {
-            var record = force ? null : ingRepo.findLatest(provider);
+            var record = force ? null : ingRepo.get(provider);
             String lastToken = null;
             if (record != null) {
                 if (record.getFinished() != null) {
@@ -121,31 +119,26 @@ public class CveService {
                 }
             } else {
                 record = new IngestRecord.Builder().folder(provider).build();
-                ingRepo.persist(record);
+                ingRepo.save(record);
                 LOGGER.info("Starting sync for {}. No previous load found", provider, record.getLastPageToken());
             }
             var page = osvLoader.loadPage(provider, lastToken, pageSize).toList();
-            while(page.size() > 0) {
+            while (page.size() > 0) {
                 page.forEach(this::load);
                 lastToken = String.format("%s/%s.json", provider, page.get(page.size() - 1).vulnId());
                 record.setProcessed(record.getProcessed() + page.size())
                         .setLastPageToken(lastToken);
-                ingRepo.update(record);
+                ingRepo.save(record);
                 page = osvLoader.loadPage(provider, lastToken, pageSize).toList();
                 LOGGER.info("Loaded {} elements for {}", page.size(), provider);
             }
             LOGGER.info("Loaded {}", provider);
             record.setFinished(new Date(System.currentTimeMillis()));
-            ingRepo.update(record);
+            ingRepo.save(record);
 
         } catch (Exception e) {
             LOGGER.error("Unable to process provider {}", provider, e);
         }
-    }
-
-    public void deleteAll() {
-        ingRepo.deleteAll();
-        cveRepository.deleteAll();
     }
 
 }
