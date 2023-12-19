@@ -2,16 +2,9 @@ package com.redhat.ecosystemappeng.model;
 
 import java.util.Date;
 
-import org.bson.codecs.pojo.annotations.BsonId;
-import org.bson.types.ObjectId;
-
-import io.quarkus.mongodb.panache.common.MongoEntity;
-
-@MongoEntity(collection = "ingestions", database = "exhort")
 public class IngestRecord {
 
-    @BsonId
-    ObjectId id;
+    Long id;
     Date started;
     Date finished;
     Long processed;
@@ -21,7 +14,7 @@ public class IngestRecord {
     public IngestRecord() {
     }
 
-    public IngestRecord(ObjectId id,
+    public IngestRecord(Long id,
             Date started,
             Date finished,
             Long processed,
@@ -35,12 +28,12 @@ public class IngestRecord {
         this.lastPageToken = lastPageToken;
     }
 
-    public IngestRecord setId(ObjectId id) {
+    public IngestRecord setId(Long id) {
         this.id = id;
         return this;
     }
 
-    public ObjectId getId() {
+    public Long getId() {
         return id;
     }
 
@@ -90,7 +83,7 @@ public class IngestRecord {
     }
 
     public static class Builder {
-        ObjectId id;
+        Long id;
         Date started;
         Date finished;
         Long processed;
@@ -109,7 +102,7 @@ public class IngestRecord {
             this.lastPageToken = other.lastPageToken;
         }
 
-        public Builder id(ObjectId id) {
+        public Builder id(Long id) {
             this.id = id;
             return this;
         }

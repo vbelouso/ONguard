@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: Exhort OSV NVD API
+  description: Vulnerability provider integrating OSV and NVD datasources
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+paths:
+  /cves/{cveId}:
+    get:
+      operationId: getCve
+      summary: Retrieves the NVD Data from the given CVE id
+      parameters:
+        - in: path
+          name: cveId
+          schema:
+            type: string
+          required: true
+          description: CVE id to retrieve the NVD data
+      responses:
+        '200':
+          description: NVD data associated to the provided CVE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityResponse'
+        '404':
+          description: Data not found
+  /cves:
+    post:
+      operationId: listCves
+      summary:  Takes a list of CVEs and returns the related NVD Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListRequest'
+      responses:
+        '200':
+          description: List of the NVD data found for the provided CVEs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+  /vulnerabilities/{vulnerabilityId}:
+    get:
+      operationId: getVulnerability
+      summary: Retrieves the vulnerability data from the given vulnerabilityId
+      parameters:
+        - in: path
+          name: vulnerabilityId
+          schema:
+            type: string
+          required: true
+          description: Vulnerability id to retrieve the NVD data
+      responses:
+        '200':
+          description: NVD data associated to the provided VulnerabilityId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityResponse'
+        '404':
+          description: Data not found
+  /vulnerabilities:
+    post:
+      operationId: listVulnerabilities
+      summary: Retrieves the vulnerability data from the all the given vulnerabilityIds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListRequest'
+      responses:
+        '200':
+          description: List of the NVD data found for the provided VulnerabilityIds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+components:
+  schemas:
+    ListRequest:
+      type: array
+      items:
+        type: string
+    ListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/VulnerabilityResponse'
+    VulnerabilityResponse:
+      type: object
+      properties:
+        vulnId:
+          type: string
+          example: GHSA-23hm-7w47-xw72
+        cveId:
+          $ref: https://raw.githubusercontent.com/CVEProject/cve-schema/v5.0.0/schema/v5.0/CVE_JSON_5.0_schema.json#/definitions/cveId
+        created:
+          type: string
+          format: date-time
+        lastModified:
+          type: string
+          format: date-time
+        nvdData:
+          $ref: https://raw.githubusercontent.com/CVEProject/cve-schema/v5.0.0/schema/v5.0/CVE_JSON_5.0_schema.json

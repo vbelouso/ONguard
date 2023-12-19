@@ -15,12 +15,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class NvdFileService implements NvdService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
+    private static final String CVE_PATTERN = "CVE-\\d{4}-\\d{4,7}";
 
     @ConfigProperty(name = "migration.nvd.file.path")
     Path repositoryPath;
 
     @Override
     public byte[] findByCve(String cve) {
+        if(cve == null || cve.isEmpty()) {
+            return null;
+        }
+        if(!cve.matches(CVE_PATTERN)) {
+            return null;
+        }
         String year = cve.replace("CVE-", "");
         year = year.substring(0, year.indexOf("-"));
         var path = repositoryPath.resolve(year);
