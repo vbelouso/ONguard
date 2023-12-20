@@ -44,20 +44,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListResponse'
-  /vulnerabilities/{vulnerabilityId}:
+  /vulnerabilities/{alias}:
     get:
       operationId: getVulnerability
-      summary: Retrieves the vulnerability data from the given vulnerabilityId
+      summary: Retrieves the vulnerability data from the given vulnerability alias
       parameters:
         - in: path
-          name: vulnerabilityId
+          name: alias
           schema:
             type: string
           required: true
-          description: Vulnerability id to retrieve the NVD data
+          description: Vulnerability alias to retrieve the NVD data
       responses:
         '200':
-          description: NVD data associated to the provided VulnerabilityId
+          description: NVD data associated to the provided vulnerability alias
           content:
             application/json:
               schema:
@@ -67,7 +67,7 @@ paths:
   /vulnerabilities:
     post:
       operationId: listVulnerabilities
-      summary: Retrieves the vulnerability data from the all the given vulnerabilityIds
+      summary: Retrieves the vulnerability data from the all the given vulnerability aliases
       requestBody:
         required: true
         content:
@@ -76,7 +76,7 @@ paths:
               $ref: '#/components/schemas/ListRequest'
       responses:
         '200':
-          description: List of the NVD data found for the provided VulnerabilityIds
+          description: List of the NVD data found for the provided vulnerability aliases
           content:
             application/json:
               schema:
@@ -94,9 +94,11 @@ components:
     VulnerabilityResponse:
       type: object
       properties:
-        vulnId:
-          type: string
-          example: GHSA-23hm-7w47-xw72
+        aliases:
+          type: array
+          items:
+            type: string
+            example: GHSA-23hm-7w47-xw72
         cveId:
           $ref: https://raw.githubusercontent.com/CVEProject/cve-schema/v5.0.0/schema/v5.0/CVE_JSON_5.0_schema.json#/definitions/cveId
         created:

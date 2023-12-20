@@ -2,8 +2,6 @@ package com.redhat.ecosystemappeng.service.osv;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -28,8 +26,6 @@ public class OsvGcsLoader implements OsvLoader {
 
     private static final String OSV_BUCKET = "osv-vulnerabilities";
 
-    public static final Collection<String> PROVIDERS = Arrays.asList("Maven", "Go", "npm", "PyPI");
-
     Storage storage;
 
     @Inject
@@ -41,34 +37,38 @@ public class OsvGcsLoader implements OsvLoader {
     }
 
     @Override
-    public List<CveAliasResponse> fetch(List<String> vulnIds) {
-        return vulnIds.stream().parallel().map(this::getCveAlias).toList();
+    public List<CveAliasResponse> fetch(List<String> aliases) {
+        return aliases.stream().parallel().map(this::getCveByAlias).toList();
     }
 
     @Override
-    public CveAliasResponse getCveAlias(String vulnId) {
-        var results = storage.list(OSV_BUCKET, Storage.BlobListOption.matchGlob(String.format("**/%s.json", vulnId)));
-        var found = results.streamAll().map(blob -> toAlias(vulnId, blob)).findFirst();
+    public CveAliasResponse getCveByAlias(String alias) {
+        var results = storage.list(OSV_BUCKET, Storage.BlobListOption.matchGlob(String.format("**/%s.json", alias)));
+        var found = results.streamAll().map(blob -> toAlias(alias, blob)).findFirst();
         if (found.isPresent()) {
             return found.get();
         }
-        return new CveAliasResponse(vulnId, null, null);
+        return new CveAliasResponse(null, List.of(alias), null);
     }
 
     private CveAliasResponse toAlias(String vulnId, Blob blob) {
         try {
             JsonNode content = mapper.readTree(blob.getContent());
             var elements = content.withArray("aliases").elements();
+            List<String> aliases = new ArrayList<>();
+            String cveId = null;
             while (elements.hasNext()) {
                 String alias = elements.next().asText();
                 if (alias.startsWith("CVE-")) {
-                    return new CveAliasResponse(vulnId, alias, null);
+                    cveId = alias;
+                } else {
+                    aliases.add(alias);
                 }
             }
-            return new CveAliasResponse(vulnId, null, null);
+            return new CveAliasResponse(cveId, aliases, null);
         } catch (IOException e) {
             LOGGER.error("Unable to parse content for {}", blob.getName(), e);
-            return new CveAliasResponse(vulnId, null, e.getMessage());
+            return new CveAliasResponse(null, List.of(vulnId), e.getMessage());
         }
     }
 
