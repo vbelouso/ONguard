@@ -1,5 +1,7 @@
 package com.redhat.ecosystemappeng.model;
 
-public record CveAliasResponse(String vulnId, String cveId, String error) {
+import java.util.List;
+
+public record CveAliasResponse(String cveId, List<String> aliases, String error) {
     
 }

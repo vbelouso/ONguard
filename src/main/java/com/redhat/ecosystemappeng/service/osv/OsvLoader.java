@@ -6,9 +6,9 @@ import java.util.stream.Stream;
 import com.redhat.ecosystemappeng.model.CveAliasResponse;
 
 public interface OsvLoader {
-    List<CveAliasResponse> fetch(List<String> vulnIds);
+    List<CveAliasResponse> fetch(List<String> aliases);
 
-    CveAliasResponse getCveAlias(String vulnId);
+    CveAliasResponse getCveByAlias(String alias);
 
     Stream<CveAliasResponse> loadPage(String provider, String lastToken, long pageSize);
 
