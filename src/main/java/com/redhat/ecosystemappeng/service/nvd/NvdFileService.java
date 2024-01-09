@@ -3,6 +3,7 @@ package com.redhat.ecosystemappeng.service.nvd;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -15,7 +16,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class NvdFileService implements NvdService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
-    private static final String CVE_PATTERN = "CVE-\\d{4}-\\d{4,7}";
+    public static final Pattern CVE_PATTERN = Pattern.compile("CVE-\\d{4}-\\d{4,7}", Pattern.CASE_INSENSITIVE);
 
     @ConfigProperty(name = "migration.nvd.file.path")
     Path repositoryPath;
@@ -25,7 +26,7 @@ public class NvdFileService implements NvdService {
         if(cve == null || cve.isEmpty()) {
             return null;
         }
-        if(!cve.matches(CVE_PATTERN)) {
+        if(!CVE_PATTERN.matcher(cve).matches()) {
             return null;
         }
         String year = cve.replace("CVE-", "");
