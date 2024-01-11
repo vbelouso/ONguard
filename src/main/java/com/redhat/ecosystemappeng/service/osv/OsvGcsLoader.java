@@ -22,90 +22,90 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class OsvGcsLoader implements OsvLoader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OsvGcsLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OsvGcsLoader.class);
 
-    private static final String OSV_BUCKET = "osv-vulnerabilities";
+  private static final String OSV_BUCKET = "osv-vulnerabilities";
 
-    Storage storage;
+  Storage storage;
 
-    @Inject
-    ObjectMapper mapper;
+  @Inject
+  ObjectMapper mapper;
 
-    @PostConstruct
-    public void init() {
-        storage = StorageOptions.getUnauthenticatedInstance().getService();
+  @PostConstruct
+  public void init() {
+    storage = StorageOptions.getUnauthenticatedInstance().getService();
+  }
+
+  @Override
+  public List<CveAliasResponse> fetch(List<String> aliases) {
+    return aliases.stream().parallel().map(this::getCveByAlias).toList();
+  }
+
+  @Override
+  public CveAliasResponse getCveByAlias(String alias) {
+    var results = storage.list(OSV_BUCKET, Storage.BlobListOption.matchGlob(String.format("**/%s.json", alias)));
+    var found = results.streamAll().map(blob -> toAlias(alias, blob)).findFirst();
+    if (found.isPresent()) {
+      return found.get();
     }
+    return new CveAliasResponse(null, List.of(alias), null);
+  }
 
-    @Override
-    public List<CveAliasResponse> fetch(List<String> aliases) {
-        return aliases.stream().parallel().map(this::getCveByAlias).toList();
-    }
-
-    @Override
-    public CveAliasResponse getCveByAlias(String alias) {
-        var results = storage.list(OSV_BUCKET, Storage.BlobListOption.matchGlob(String.format("**/%s.json", alias)));
-        var found = results.streamAll().map(blob -> toAlias(alias, blob)).findFirst();
-        if (found.isPresent()) {
-            return found.get();
+  private CveAliasResponse toAlias(String vulnId, Blob blob) {
+    try {
+      JsonNode content = mapper.readTree(blob.getContent());
+      var elements = content.withArray("aliases").elements();
+      List<String> aliases = new ArrayList<>();
+      String cveId = null;
+      while (elements.hasNext()) {
+        String alias = elements.next().asText();
+        if (alias.startsWith("CVE-")) {
+          cveId = alias;
+        } else {
+          aliases.add(alias);
         }
-        return new CveAliasResponse(null, List.of(alias), null);
+      }
+      return new CveAliasResponse(cveId, aliases, null);
+    } catch (IOException e) {
+      LOGGER.error("Unable to parse content for {}", blob.getName(), e);
+      return new CveAliasResponse(null, List.of(vulnId), e.getMessage());
     }
+  }
 
-    private CveAliasResponse toAlias(String vulnId, Blob blob) {
-        try {
-            JsonNode content = mapper.readTree(blob.getContent());
-            var elements = content.withArray("aliases").elements();
-            List<String> aliases = new ArrayList<>();
-            String cveId = null;
-            while (elements.hasNext()) {
-                String alias = elements.next().asText();
-                if (alias.startsWith("CVE-")) {
-                    cveId = alias;
-                } else {
-                    aliases.add(alias);
-                }
-            }
-            return new CveAliasResponse(cveId, aliases, null);
-        } catch (IOException e) {
-            LOGGER.error("Unable to parse content for {}", blob.getName(), e);
-            return new CveAliasResponse(null, List.of(vulnId), e.getMessage());
-        }
+  @Override
+  public Stream<CveAliasResponse> loadPage(String provider, String lastToken, long pageSize) {
+    var folder = provider + "/";
+    try {
+      var options = defaultOptions(folder, pageSize);
+      if (lastToken != null) {
+        options.add(Storage.BlobListOption.endOffset(lastToken));
+      }
+      return storage.list(OSV_BUCKET,
+          options.toArray(new Storage.BlobListOption[0])).streamValues().map(this::toCveAlias);
+    } catch (Exception e) {
+      LOGGER.error("Unable to process folder {}", folder, e);
+      return Stream.empty();
     }
+  }
 
-    @Override
-    public Stream<CveAliasResponse> loadPage(String provider, String lastToken, long pageSize) {
-        var folder = provider + "/";
-        try {
-            var options = defaultOptions(folder, pageSize);
-            if (lastToken != null) {
-                options.add(Storage.BlobListOption.endOffset(lastToken));
-            }
-            return storage.list(OSV_BUCKET,
-                    options.toArray(new Storage.BlobListOption[0])).streamValues().map(this::toCveAlias);
-        } catch (Exception e) {
-            LOGGER.error("Unable to process folder {}", folder, e);
-            return Stream.empty();
-        }
+  private CveAliasResponse toCveAlias(Blob blob) {
+    try {
+      var vuln = mapper.readTree(blob.getContent());
+      var id = vuln.get("id").asText();
+      return toAlias(id, blob);
+    } catch (IOException e) {
+      LOGGER.error("Unable to parse blob {}", blob.getName(), e);
+      return new CveAliasResponse(null, null, e.getMessage());
     }
+  }
 
-    private CveAliasResponse toCveAlias(Blob blob) {
-        try {
-            var vuln = mapper.readTree(blob.getContent());
-            var id = vuln.get("id").asText();
-            return toAlias(id, blob);
-        } catch (IOException e) {
-            LOGGER.error("Unable to parse blob {}", blob.getName(), e);
-            return new CveAliasResponse(null, null, e.getMessage());
-        }
-    }
-
-    private List<Storage.BlobListOption> defaultOptions(String folder, long pageSize) {
-        List<Storage.BlobListOption> opts = new ArrayList<>();
-        opts.add(Storage.BlobListOption.prefix(folder));
-        opts.add(Storage.BlobListOption.currentDirectory());
-        opts.add(Storage.BlobListOption.matchGlob("**.json"));
-        opts.add(Storage.BlobListOption.pageSize(pageSize));
-        return opts;
-    }
+  private List<Storage.BlobListOption> defaultOptions(String folder, long pageSize) {
+    List<Storage.BlobListOption> opts = new ArrayList<>();
+    opts.add(Storage.BlobListOption.prefix(folder));
+    opts.add(Storage.BlobListOption.currentDirectory());
+    opts.add(Storage.BlobListOption.matchGlob("**.json"));
+    opts.add(Storage.BlobListOption.pageSize(pageSize));
+    return opts;
+  }
 
 }
