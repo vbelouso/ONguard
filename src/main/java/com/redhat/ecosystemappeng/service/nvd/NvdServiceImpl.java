@@ -1,5 +1,6 @@
 package com.redhat.ecosystemappeng.service.nvd;
 
+import org.eclipse.microprofile.faulttolerance.exceptions.CircuitBreakerOpenException;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
@@ -8,13 +9,12 @@ import org.slf4j.LoggerFactory;
 import com.redhat.ecosystemappeng.model.nvd.Metrics;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class NvdServiceImpl implements NvdService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NvdServiceImpl.class);
-    
+
     @RestClient
     NvdApi nvdApi;
 
@@ -35,11 +35,25 @@ public class NvdServiceImpl implements NvdService {
                         response.vulnerabilities().size());
             }
         } catch (ClientWebApplicationException e) {
-            if (e.getResponse() != null && e.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                LOGGER.info("Not found vulnerability: {} in NVD", cveId);
+            if (e.getResponse() != null) {
+                switch (e.getResponse().getStatus()) {
+                    case 404:
+                        LOGGER.info("Not found vulnerability: {} in NVD", cveId);
+                        break;
+                    case 403:
+                        LOGGER.info(
+                                "Unable to retrieve vulnerability: {} from NVD. Rate limit reached. Wait for async loading or retry after 30 seconds",
+                                cveId);
+                        break;
+                    default:
+                        LOGGER.error("Error retrieving NVD vulnerability for {}", cveId, e);
+                        break;
+                }
             } else {
                 LOGGER.error("Error retrieving NVD vulnerability for {}", cveId, e);
             }
+        } catch (CircuitBreakerOpenException e) {
+            LOGGER.info("Waiting for the circuit breaker to close. CVE: {}", cveId, e.getMessage());
         }
         return null;
     }
