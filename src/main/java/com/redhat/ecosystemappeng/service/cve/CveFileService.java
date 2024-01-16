@@ -1,4 +1,4 @@
-package com.redhat.ecosystemappeng.service.nvd;
+package com.redhat.ecosystemappeng.service.cve;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,12 +13,12 @@ import org.slf4j.LoggerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class NvdFileService implements NvdService {
+public class CveFileService implements CveService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NvdFileService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CveFileService.class);
     public static final Pattern CVE_PATTERN = Pattern.compile("CVE-\\d{4}-\\d{4,7}", Pattern.CASE_INSENSITIVE);
 
-    @ConfigProperty(name = "migration.nvd.file.path")
+    @ConfigProperty(name = "migration.cve.file.path")
     Path repositoryPath;
 
     @Override

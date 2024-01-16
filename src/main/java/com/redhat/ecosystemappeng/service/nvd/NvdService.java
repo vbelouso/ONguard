@@ -1,5 +1,9 @@
 package com.redhat.ecosystemappeng.service.nvd;
 
+import com.redhat.ecosystemappeng.model.nvd.Metrics;
+
 public interface NvdService {
-    byte[] findByCve(String cve);
+
+    Metrics getCveMetrics(String cveId);
+
 }
