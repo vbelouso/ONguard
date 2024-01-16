@@ -1,162 +1,72 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: osv-nvd-service
+  name: exhort-cve-service
   labels:
-    app: osv-nvd-service
+    app: exhort-cve-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: osv-nvd-service
+      app: exhort-cve-service
   template:
     metadata:
       labels:
-        app: osv-nvd-service
+        app: exhort-cve-service
     spec:
       containers:
-      - name: osv-nvd-service
-        image: quay.io/ruben/osv-nvd-service:latest
+      - name: exhort-cve-service
+        image: exhort-cve-service:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 8080
+          protocol: TCP
+        - name: management
+          containerPort: 9000
           protocol: TCP
         resources:
           limits:
             memory: "128Mi"
             cpu: "500m"
         env:
-          - name: QUARKUS_MONGODB_CONNECTION-STRING
+          - name: DB_REDIS_ENDPOINT
             valueFrom:
               secretKeyRef:
-                name: mongodb-creds
-                key: mongodb-connection
-          - name: QUARKUS_MONGODB_DATABASE
+                name: exhort-stage
+                key: db.endpoint
+          - name: DB_REDIS_PORT
             valueFrom:
               secretKeyRef:
-                name: mongodb-creds
-                key: mongodb-database
-          - name: QUARKUS_MONGODB_CREDENTIALS_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: mongodb-creds
-                key: mongodb-username
-          - name: QUARKUS_MONGODB_CREDENTIALS_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: mongodb-creds
-                key: mongodb-password
-          - name: MIGRATION_NVD_FILE_PATH
-            value: "/repo/cvelistV5/cves"
-        volumeMounts:
-          - name: repo
-            mountPath: "/repo"
-      volumes:
-        - name: repo
-          persistentVolumeClaim:
-            claimName: nvd-data
+                name: exhort-stage
+                key: db.port
+        livenessProbe:
+          httpGet:
+            path: /q/health/live
+            port: 9000
+          initialDelaySeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /q/health/ready
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: osv-nvd-service
+  name: exhort-cve-service
   labels:
-    app: osv-nvd-service
+    app: exhort-cve-service
 spec:
   ports:
   - name: http
     port: 8080
     protocol: TCP
     targetPort: 8080
+  - name: management
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
   selector:
-    app: osv-nvd-service
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nvd-data
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 8Gi
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: nvd-sync
-spec:
-  schedule: "0 * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: git-job
-            image: quay.io/ruben/ubi8-git:latest
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - /scripts/pull.sh
-            - /scripts/sync.sh
-            env:
-              - name: REPO_PATH
-                value: /repo
-              - name: REPO_URL
-                value: https://github.com/CVEProject/cvelistV5.git
-              - name: SERVICE_ENDPOINT
-                value: http://osv-nvd-service:8080/cves
-            volumeMounts:
-            - name: repo
-              mountPath: "/repo"
-            - name: scripts
-              mountPath: /scripts
-          restartPolicy: OnFailure
-          volumes:
-            - name: repo
-              persistentVolumeClaim:
-                claimName: nvd-data
-            - name: scripts
-              configMap:
-                name: fetch-nvd-repo-scripts
-                defaultMode: 0777
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: nvd-clone
-spec:
-  template:
-    spec:
-      containers:
-      - name: git-job
-        image: quay.io/ruben/ubi8-git:latest
-        imagePullPolicy: IfNotPresent
-        command:
-        - /bin/sh
-        - -c
-        - /scripts/clone.sh
-        env:
-          - name: REPO_PATH
-            value: /repo
-          - name: REPO_URL
-            value: https://github.com/CVEProject/cvelistV5.git
-        volumeMounts:
-        - name: repo
-          mountPath: "/repo"
-        - name: scripts
-          mountPath: /scripts
-      restartPolicy: OnFailure
-      volumes:
-        - name: repo
-          persistentVolumeClaim:
-            claimName: nvd-data
-        - name: scripts
-          configMap:
-            name: fetch-nvd-repo-scripts
-            defaultMode: 0777
-  backoffLimit: 4
+    app: exhort-cve-service

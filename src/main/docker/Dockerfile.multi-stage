@@ -1,0 +1,38 @@
+## Stage 1 : build with maven builder image with native capabilities
+FROM registry.redhat.io/quarkus/mandrel-23-rhel8:23.0 AS build
+
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
+COPY --chown=quarkus:quarkus pom.xml /code/
+## Maven Settings with the auth token for Github Maven Repository
+COPY --chown=quarkus:quarkus settings.xml /code/settings.xml
+
+USER quarkus
+WORKDIR /code
+RUN ./mvnw -B --settings /code/settings.xml org.apache.maven.plugins:maven-dependency-plugin:3.6.1:go-offline
+COPY --chown=quarkus:quarkus src /code/src
+RUN ./mvnw verify -B -Pnative -Dmaven.test.skip=true -Dquarkus.native.native-image-xmx=8g
+
+## Stage 2 : create the docker final image
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3
+
+LABEL description="Red Hat Trusted Profile Analyzer - Exhort CVE Service"
+LABEL io.k8s.description="Red Hat Trusted Profile Analyzer - Exhort CVE Service"
+LABEL io.k8s.display-name="RHTPA Exhort CVE Service"
+LABEL io.openshift.tags="rhtpa exhort cve service"
+LABEL summary="The RHTPA Exhort CVE exposes an API for retrieving vulnerability data \
+from OSV and NVD databases"
+
+WORKDIR /work/
+COPY --from=build /code/target/*-runner /work/application
+
+# set up permissions for user `1001`
+RUN chmod 775 /work /work/application \
+  && chown -R 1001 /work \
+  && chmod -R "g+rwX" /work \
+  && chown -R 1001:root /work
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
