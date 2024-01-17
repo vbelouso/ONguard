@@ -35,7 +35,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
         
         Map<String, String> props = new HashMap<>();
         props.put("quarkus.rest-client.nvd-api.url", wireMockServer.baseUrl());
-        props.put("migration.nvd.apikey", NVD_API_KEY);
+        props.put("api.nvd.apikey", NVD_API_KEY);
         return props;
     }
 

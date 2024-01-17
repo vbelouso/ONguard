@@ -24,7 +24,7 @@ public interface NvdApi {
     static final long NVD_API_WINDOW_SECS = 30;
 
     @GET
-    @ClientHeaderParam(name = "apiKey", value = "${migration.nvd.apikey}")
+    @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
     @Produces(MediaType.APPLICATION_JSON)
     @Fallback(value = NvdFallbackService.class, applyOn = WebApplicationException.class, skipOn = ClientWebApplicationException.class)
     @CircuitBreaker(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)

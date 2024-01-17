@@ -40,6 +40,11 @@ spec:
               secretKeyRef:
                 name: exhort-stage
                 key: db.port
+          - name: API_NVD_APIKEY
+            valueFrom:
+              secretKeyRef:
+                name: exhort-cve-secret
+                key: nvd.apikey
         livenessProbe:
           httpGet:
             path: /q/health/live
