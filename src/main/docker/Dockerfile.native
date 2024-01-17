@@ -7,14 +7,14 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native -t quarkus/exhort-vuln-ingester .
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/exhort-cve-service .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/exhort-vuln-ingester
+# docker run -i --rm -p 8080:8080 quarkus/exhort-cve-service
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

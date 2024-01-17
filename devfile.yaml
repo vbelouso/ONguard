@@ -1,0 +1,33 @@
+schemaVersion: 2.2.0
+metadata:
+  name: exhort-cve-service
+  version: 1.0.0
+  provider: Red Hat
+  supportUrl: https://github.com/RHEcosystemAppEng/exhort-cve-service/issues
+  website: https://github.com/RHEcosystemAppEng/exhort-cve-service
+  displayName: Exhort CVE Service
+  description: Exhort CVE Service that aggregates data from OSV and NVD
+  tags:
+    - Exhort
+    - RHTPA
+    - Java
+    - Quarkus
+    - NVD
+    - OSV
+  projectType: Quarkus
+  language: Java
+parent:
+  id: java-quarkus
+  registryUrl: 'https://registry.devfile.io'
+components:
+  - name: image-build
+    image:
+      imageName: exhort-cve-service:latest
+      dockerfile:
+        uri: src/main/docker/Dockerfile.multi-stage
+        buildContext: .
+        rootRequired: false
+commands:
+  - id: build-image
+    apply:
+      component: image-build
