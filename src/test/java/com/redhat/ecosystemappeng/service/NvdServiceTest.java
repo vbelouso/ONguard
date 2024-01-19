@@ -1,7 +1,6 @@
 package com.redhat.ecosystemappeng.service;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,7 +19,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
 import com.redhat.ecosystemappeng.model.Vulnerability;
-import com.redhat.ecosystemappeng.model.nvd.CvssData;
 import com.redhat.ecosystemappeng.model.nvd.Cvss_V31;
 import com.redhat.ecosystemappeng.model.nvd.Metrics;
 import com.redhat.ecosystemappeng.model.nvd.NvdCve;
