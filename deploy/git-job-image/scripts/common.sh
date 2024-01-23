@@ -5,7 +5,7 @@ set -euo pipefail
 WORKDIR=${WORKDIR:-./work}
 REPO_PATH=${REPO_PATH:-./repo}/cvelistV5
 REPO_URL=${REPO_URL:-https://github.com/CVEProject/cvelistV5.git}
-SERVICE_ENDPOINT=${SERVICE_ENDPOINT:-http://exhort-cve-service:8080}
+SERVICE_ENDPOINT=${SERVICE_ENDPOINT:-http://onguard:8080}
 
 declare -a buffer=()
 

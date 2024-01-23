@@ -1,9 +1,9 @@
 kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
-  name: exhort-cve-service
+  name: onguard
 labels:
-  template: exhort-cve-service
+  template: onguard
 objects:
   - kind: ServiceAccount
     apiVersion: v1
@@ -179,7 +179,7 @@ parameters:
   - name: APP_NAME
     displayName: Application name
     description: Application name
-    value: exhort-cve-service
+    value: onguard
     required: true
   - name: REPLICAS
     displayName: Replicas
@@ -189,7 +189,7 @@ parameters:
   - name: IMAGE
     displayName: Container image name
     description: Container image name
-    value: quay.io/ecosystem-appeng/exhort-cve-service
+    value: quay.io/ecosystem-appeng/onguard
     required: true
   - name: IMAGE_TAG
     displayName: Container image tag
@@ -199,7 +199,7 @@ parameters:
   - name: SERVICE_ACCOUNT_NAME
     displayName: ServiceAccount name
     description: The name of the ServiceAccount to use to run this pod.
-    value: exhort-cve-service-sa
+    value: onguard-sa
   - name: ELASTICACHE_SECRET
     displayName: Elasticache Secret
     description: Name of the secret containing the Elasticache settings
@@ -208,7 +208,7 @@ parameters:
   - name: SERVICE_NAME
     displayName: Service name
     description: Service name
-    value: exhort-cve-service
+    value: onguard
     required: true
   - name: SERVICE_PORT
     displayName: Service port
@@ -245,8 +245,8 @@ parameters:
     displayName: Environment (default -- stage)
     description: 'Application environment'
   - name: PROJECT_NAME
-    value: trusted-content-exhort-cve-service-stage
-    displayName: Project name (default -- trusted-content-exhort-cve-service-stage)
+    value: trusted-content-onguard-stage
+    displayName: Project name (default -- trusted-content-onguard-stage)
     description: 'Project name'
   - name: BACKSTAGE_PLUGIN_SA
     displayName: Backstage ServiceAccount name

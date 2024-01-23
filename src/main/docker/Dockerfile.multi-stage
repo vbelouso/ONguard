@@ -14,11 +14,11 @@ RUN ./mvnw package -B -Pnative -DskipTests=true
 ## Stage 2 : create the docker final image
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3
 
-LABEL description="Red Hat Trusted Profile Analyzer - Exhort CVE Service"
-LABEL io.k8s.description="Red Hat Trusted Profile Analyzer - Exhort CVE Service"
-LABEL io.k8s.display-name="RHTPA Exhort CVE Service"
-LABEL io.openshift.tags="rhtpa exhort cve service"
-LABEL summary="The RHTPA Exhort CVE exposes an API for retrieving vulnerability data \
+LABEL description="Red Hat Trusted Profile Analyzer - ONGuard Service"
+LABEL io.k8s.description="Red Hat Trusted Profile Analyzer - ONGuard Service"
+LABEL io.k8s.display-name="RHTPA ONGuard service"
+LABEL io.openshift.tags="rhtpa exhort onguard"
+LABEL summary="The RHTPA ONGuard Service exposes an API for retrieving vulnerability data \
 from OSV and NVD databases"
 
 WORKDIR /work/
