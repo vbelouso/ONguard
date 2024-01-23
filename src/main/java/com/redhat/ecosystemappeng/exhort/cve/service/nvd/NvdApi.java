@@ -31,7 +31,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/rest/json/cves/2.0")
@@ -43,7 +42,7 @@ public interface NvdApi {
     @GET
     @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Fallback(value = NvdFallbackService.class, applyOn = WebApplicationException.class, skipOn = ClientWebApplicationException.class)
+    @Fallback(value = NvdFallbackService.class, skipOn = ClientWebApplicationException.class)
     @CircuitBreaker(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)
     NvdResponse getCve(@QueryParam("cveId") String cveId);
 
