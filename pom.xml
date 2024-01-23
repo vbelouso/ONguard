@@ -4,12 +4,12 @@
   xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.redhat.ecosystemappeng.exhort.cve</groupId>
-  <artifactId>exhort-cve-service</artifactId>
+  <groupId>com.redhat.ecosystemappeng.onguard</groupId>
+  <artifactId>onguard</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>Exhort CVE Service</name>
-  <description>Red Hat Trusted Profile Analyser :: Exhort :: Exhort CVE Service</description>
-  <url>https://github.com/RHEcosystemAppEng/exhort-cve-service</url>
+  <name>ONGuard</name>
+  <description>Red Hat Trusted Profile Analyser :: Exhort :: ONGuard</description>
+  <url>https://github.com/RHEcosystemAppEng/onguard</url>
   <inceptionYear>2024</inceptionYear>
 
   <properties>
@@ -43,13 +43,13 @@
 
   <issueManagement>
     <system>GitHub Issues</system>
-    <url>https://github.com/RHEcosystemAppEng/exhort-cve-service/issues</url>
+    <url>https://github.com/RHEcosystemAppEng/onguard/issues</url>
   </issueManagement>
 
   <scm>
-    <url>https://github.com/RHEcosystemAppEng/exhort-cve-service</url>
-    <connection>scm:git:git@github.com:RHEcosystemAppEng/exhort-cve-service.git</connection>
-    <developerConnection>scm:git:git@github.com:RHEcosystemAppEng/exhort-cve-service.git</developerConnection>
+    <url>https://github.com/RHEcosystemAppEng/onguard</url>
+    <connection>scm:git:git@github.com:RHEcosystemAppEng/onguard.git</connection>
+    <developerConnection>scm:git:git@github.com:RHEcosystemAppEng/onguard.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

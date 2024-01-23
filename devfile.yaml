@@ -1,12 +1,12 @@
 schemaVersion: 2.2.0
 metadata:
-  name: exhort-cve-service
+  name: onguard
   version: 1.0.0
   provider: Red Hat
-  supportUrl: https://github.com/RHEcosystemAppEng/exhort-cve-service/issues
-  website: https://github.com/RHEcosystemAppEng/exhort-cve-service
-  displayName: Exhort CVE Service
-  description: Exhort CVE Service that aggregates data from OSV and NVD
+  supportUrl: https://github.com/RHEcosystemAppEng/onguard/issues
+  website: https://github.com/RHEcosystemAppEng/onguard
+  displayName: ONGUard
+  description: ONGuard Service that aggregates data from OSV and NVD
   tags:
     - Exhort
     - RHTPA
@@ -22,7 +22,7 @@ parent:
 components:
   - name: image-build
     image:
-      imageName: exhort-cve-service:latest
+      imageName: onguard:latest
       dockerfile:
         uri: src/main/docker/Dockerfile.multi-stage
         buildContext: .
