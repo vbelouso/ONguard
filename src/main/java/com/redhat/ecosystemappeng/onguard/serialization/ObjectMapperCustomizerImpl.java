@@ -29,5 +29,6 @@ public class ObjectMapperCustomizerImpl implements ObjectMapperCustomizer {
     @Override
     public void customize(ObjectMapper mapper) {
         mapper.setSerializationInclusion(Include.NON_NULL);
+
     }
 }

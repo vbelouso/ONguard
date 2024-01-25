@@ -40,11 +40,11 @@ class NvdApiTest {
 
     @Test
     void testGetFound() {
-        assertNotNull(nvdApi.getCve(WireMockExtensions.VALID_CVE));
+        assertNotNull(nvdApi.get(WireMockExtensions.VALID_CVE));
     }
 
     @Test
     void testGetNotFound() {
-        assertThrows(ClientWebApplicationException.class, () -> nvdApi.getCve(NOT_FOUND));
+        assertThrows(ClientWebApplicationException.class, () -> nvdApi.get(NOT_FOUND));
     }
 }

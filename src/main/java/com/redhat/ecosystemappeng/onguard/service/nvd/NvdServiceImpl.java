@@ -17,13 +17,23 @@
  */
 package com.redhat.ecosystemappeng.onguard.service.nvd;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+
 import org.eclipse.microprofile.faulttolerance.exceptions.CircuitBreakerOpenException;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.redhat.ecosystemappeng.onguard.model.Vulnerability;
 import com.redhat.ecosystemappeng.onguard.model.nvd.Metrics;
+import com.redhat.ecosystemappeng.onguard.model.nvd.NvdResponse;
+import com.redhat.ecosystemappeng.onguard.model.nvd.NvdVulnerability;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -36,9 +46,23 @@ public class NvdServiceImpl implements NvdService {
     NvdApi nvdApi;
 
     @Override
+    public List<Vulnerability> bulkLoad(Integer index, Integer pageSize, LocalDateTime since) {
+        NvdResponse response;
+        if(since == null) {
+            response = nvdApi.list(index, pageSize, null, null);
+        } else {
+            response = nvdApi.list(index, pageSize, DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(since.atZone(ZoneId.systemDefault())), DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(LocalDateTime.now().atZone(ZoneId.systemDefault())));
+        }
+        if(response == null) {
+            return Collections.emptyList();
+        }
+        return response.vulnerabilities().stream().map(this::toVulnerability).toList();
+    }
+    
+    @Override
     public Metrics getCveMetrics(String cveId) {
         try {
-            var response = nvdApi.getCve(cveId);
+            var response = nvdApi.get(cveId);
             if (response.totalResults() == 0 || response.vulnerabilities() == null
                     || response.vulnerabilities().isEmpty()) {
                 LOGGER.warn("Not found vulnerabilities for CVE: {} in NVD", cveId);
@@ -74,5 +98,14 @@ public class NvdServiceImpl implements NvdService {
         }
         return null;
     }
+
+    private Vulnerability toVulnerability(NvdVulnerability nvdVuln) {
+        return new Vulnerability.Builder()
+            .created(new Date())
+            .cveId(nvdVuln.cve().id())
+            .metrics(nvdVuln.cve().metrics())
+            .build();
+    }
+
 
 }

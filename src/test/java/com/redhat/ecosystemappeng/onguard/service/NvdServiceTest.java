@@ -69,7 +69,7 @@ public class NvdServiceTest {
 
     @Test
     void testRatioExceeded() throws InterruptedException {
-        when(nvdApi.getCve(eq(VALID_CVE)))
+        when(nvdApi.get(eq(VALID_CVE)))
             .thenThrow(new WebApplicationException(403))
             .thenReturn(validResponse());
         when(repository.get(eq(VALID_CVE))).thenReturn(new Vulnerability(Collections.emptyList(), VALID_CVE, new Date(), null, null, null, null, null));
@@ -79,7 +79,7 @@ public class NvdServiceTest {
 
         Thread.sleep(1500L);
 
-        verify(nvdApi, times(2)).getCve(eq(VALID_CVE));
+        verify(nvdApi, times(2)).get(eq(VALID_CVE));
         verify(repository, times(1)).get(eq(VALID_CVE));
         verify(repository, times(1)).save(Mockito.argThat(new ArgumentMatcher<Vulnerability>() {
 
@@ -93,7 +93,7 @@ public class NvdServiceTest {
 
     @Test
     void testNotFound() throws InterruptedException {
-        when(nvdApi.getCve(eq(VALID_CVE)))
+        when(nvdApi.get(eq(VALID_CVE)))
             .thenThrow(new ClientWebApplicationException(404));
 
         var result = nvdService.getCveMetrics(VALID_CVE);
@@ -101,7 +101,7 @@ public class NvdServiceTest {
 
         Thread.sleep(1500L);
 
-        verify(nvdApi, times(1)).getCve(eq(VALID_CVE));
+        verify(nvdApi, times(1)).get(eq(VALID_CVE));
         verifyNoInteractions(repository);
     }
 

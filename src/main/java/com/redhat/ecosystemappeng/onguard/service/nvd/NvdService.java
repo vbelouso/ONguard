@@ -17,10 +17,16 @@
  */
 package com.redhat.ecosystemappeng.onguard.service.nvd;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.redhat.ecosystemappeng.onguard.model.Vulnerability;
 import com.redhat.ecosystemappeng.onguard.model.nvd.Metrics;
 
 public interface NvdService {
 
     Metrics getCveMetrics(String cveId);
+
+    List<Vulnerability> bulkLoad(Integer index, Integer pageSize, LocalDateTime since);
 
 }
