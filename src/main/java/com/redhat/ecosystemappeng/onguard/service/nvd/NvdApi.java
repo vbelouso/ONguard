@@ -21,9 +21,11 @@ import java.time.temporal.ChronoUnit;
 
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdResponse;
 
@@ -33,17 +35,27 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/rest/json/cves/2.0")
+@Path("/rest/json/cves/2.0/")
 @RegisterRestClient(configKey = "nvd-api")
 public interface NvdApi {
 
     static final long NVD_API_WINDOW_SECS = 30;
-
+    static final String SIMPLE_ISO_8601 = "yyyy-MM-dd";
     @GET
     @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
     @Produces(MediaType.APPLICATION_JSON)
     @Fallback(value = NvdFallbackService.class, skipOn = ClientWebApplicationException.class)
     @CircuitBreaker(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)
-    NvdResponse getCve(@QueryParam("cveId") String cveId);
+    NvdResponse get(@QueryParam("cveId") String cveId);
 
+    @GET
+    @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @CircuitBreaker(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)
+    @Retry(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)
+    NvdResponse list(
+            @RestQuery("startIndex") Integer startIndex,
+            @RestQuery("resultsPerPage") Integer resultsPerPage,
+            @RestQuery("lastModStartDate") String lastModStartDate,
+            @RestQuery("lastModEndDate") String lastModEndDate);
 }
