@@ -41,6 +41,7 @@ import com.redhat.ecosystemappeng.onguard.model.nvd.Metrics;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdCve;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdResponse;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdVulnerability;
+import com.redhat.ecosystemappeng.onguard.repository.VulnerabilityRepository;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdService;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdApi;
 
