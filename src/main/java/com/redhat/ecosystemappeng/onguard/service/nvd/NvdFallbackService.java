@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.ecosystemappeng.onguard.model.Vulnerability;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdResponse;
-import com.redhat.ecosystemappeng.onguard.service.VulnerabilityRepository;
+import com.redhat.ecosystemappeng.onguard.repository.VulnerabilityRepository;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
