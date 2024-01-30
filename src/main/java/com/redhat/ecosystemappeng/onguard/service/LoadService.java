@@ -107,12 +107,14 @@ public class LoadService {
         var when = bulkRepository.get();
         if(when == null) {
             LOGGER.info("Skipping scheduled sync because the database has not been pre-loaded");
-        } if (when.completed() == null) {
-            LOGGER.info("Waiting for current migration to complete");
-        } else {
-            LOGGER.info("Started scheduled sync since: {}", when.completed());
-            when = bulkRepository.remove();
-            loadFromNvdApi(when.completed());
+            return;
         }
+        if (when.completed() == null) {
+            LOGGER.info("Waiting for current migration to complete");
+            return;
+        }
+        LOGGER.info("Started scheduled sync since: {}", when.completed());
+        when = bulkRepository.remove();
+        loadFromNvdApi(when.completed());
     }
 }

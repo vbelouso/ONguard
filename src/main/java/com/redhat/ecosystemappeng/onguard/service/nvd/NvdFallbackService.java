@@ -20,6 +20,7 @@ package com.redhat.ecosystemappeng.onguard.service.nvd;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -61,8 +62,9 @@ public class NvdFallbackService implements FallbackHandler<NvdResponse> {
         }
         var vuln = repository.get(cveId);
         if (vuln != null) {
-            var newVuln = new Vulnerability.Builder(vuln).metrics(metrics).lastModified(new Date()).build();
+            var newVuln = Vulnerability.builder(vuln).metrics(metrics).lastModified(new Date()).build();
             repository.save(newVuln);
+            repository.setAliases(List.of(cveId), cveId);
         }
     }
 

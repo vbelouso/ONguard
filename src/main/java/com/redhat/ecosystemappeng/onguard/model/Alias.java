@@ -15,24 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.redhat.ecosystemappeng.onguard.repository;
+package com.redhat.ecosystemappeng.onguard.model;
 
-import java.util.List;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
-import com.redhat.ecosystemappeng.onguard.model.Vulnerability;
-import com.redhat.ecosystemappeng.onguard.model.VulnerabilityAlias;
+@RegisterForReflection
+public record Alias(String id, String cveId) {
+    
+    public static String getKey(String id) {
+        return "alias:" + id;
+    }
 
-public interface VulnerabilityRepository {
-
-    Vulnerability get(String cveId);
-
-    void save(Vulnerability vulnerability);
-
-    List<Vulnerability> list(List<String> cves);
-
-    VulnerabilityAlias getByAlias(String alias);
-
-    List<VulnerabilityAlias> listByAliases(List<String> aliases);
-
-    void setAliases(List<String> aliases, String cveId);
+    public static String getKey(Alias alias) {
+        if(alias == null) {
+            return null;
+        }
+        return getKey(alias.id);
+    }
 }
