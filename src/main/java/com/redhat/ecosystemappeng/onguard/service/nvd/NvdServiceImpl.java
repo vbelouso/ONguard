@@ -100,7 +100,7 @@ public class NvdServiceImpl implements NvdService {
     }
 
     private Vulnerability toVulnerability(NvdVulnerability nvdVuln) {
-        return new Vulnerability.Builder()
+        return Vulnerability.builder()
             .created(new Date())
             .cveId(nvdVuln.cve().id())
             .metrics(nvdVuln.cve().metrics())

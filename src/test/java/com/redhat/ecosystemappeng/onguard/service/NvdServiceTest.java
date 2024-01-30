@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +41,8 @@ import com.redhat.ecosystemappeng.onguard.model.nvd.NvdCve;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdResponse;
 import com.redhat.ecosystemappeng.onguard.model.nvd.NvdVulnerability;
 import com.redhat.ecosystemappeng.onguard.repository.VulnerabilityRepository;
-import com.redhat.ecosystemappeng.onguard.service.nvd.NvdService;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdApi;
+import com.redhat.ecosystemappeng.onguard.service.nvd.NvdService;
 
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -73,7 +72,7 @@ public class NvdServiceTest {
         when(nvdApi.get(eq(VALID_CVE)))
             .thenThrow(new WebApplicationException(403))
             .thenReturn(validResponse());
-        when(repository.get(eq(VALID_CVE))).thenReturn(new Vulnerability(Collections.emptyList(), VALID_CVE, new Date(), null, null, null, null, null));
+        when(repository.get(eq(VALID_CVE))).thenReturn(new Vulnerability(VALID_CVE, new Date(), null, null, null, null, null));
 
         var result = nvdService.getCveMetrics(VALID_CVE);
         assertNull(result);
