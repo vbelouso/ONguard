@@ -109,7 +109,7 @@ public class LoadRoute {
 
     private LocalDateTime parseDateParam(String param) throws ParseException {
         if(param != null) {
-           return LocalDateTime.parse(param, DateTimeFormatter.ISO_DATE);
+           return LocalDateTime.parse(param, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
         return null;
     }

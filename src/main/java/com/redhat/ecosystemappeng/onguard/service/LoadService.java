@@ -28,7 +28,6 @@ import com.redhat.ecosystemappeng.onguard.model.Bulk;
 import com.redhat.ecosystemappeng.onguard.repository.BulkRepository;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdService;
 
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -102,19 +101,4 @@ public class LoadService {
         loadFromNvdApi(null);
     }
 
-    @Scheduled(cron = "{load.sync.cron}")
-    public void sync() {
-        var when = bulkRepository.get();
-        if(when == null) {
-            LOGGER.info("Skipping scheduled sync because the database has not been pre-loaded");
-            return;
-        }
-        if (when.completed() == null) {
-            LOGGER.info("Waiting for current migration to complete");
-            return;
-        }
-        LOGGER.info("Started scheduled sync since: {}", when.completed());
-        when = bulkRepository.remove();
-        loadFromNvdApi(when.completed());
-    }
 }
