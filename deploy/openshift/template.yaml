@@ -118,7 +118,60 @@ objects:
               imagePullPolicy: Always
           restartPolicy: Always
           serviceAccountName: '${SERVICE_ACCOUNT_NAME}'
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: sync-nvd-script
+    data:
+      sync.sh: |
+        #!/bin/bash
 
+        set -euo pipefail
+
+        status_code=$(curl --write-out '%{http_code}' --silent --output /dev/null http://${SERVICE_NAME}:${MANAGEMENT_PORT}/load)
+
+        if [ ${status_code} == '404' ]; then
+            echo Load data is empty
+            curl -XPOST http://${SERVICE_NAME}:${MANAGEMENT_PORT}/load
+        elif [ ${status_code} == '200' ]; then
+            load=$(curl -s http://${SERVICE_NAME}:${MANAGEMENT_PORT}/load)
+            echo ${load}
+            if [[ $load == *"completed"* ]]; then
+                completed=$(echo "$load" | sed -E 's/.*"completed":"?([^,"]*)"?.*/\1/')
+                echo "Completed load on ${completed}. Sync with most recent data"
+                curl -XPOST http://${SERVICE_NAME}:${MANAGEMENT_PORT}/load?since=${completed}
+            else
+                echo "Load not yet completed"
+            fi
+        else
+            echo "Unexpected status code ${status_code}. Skip load and sync."
+        fi
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: sync-nvd-db
+    spec:
+      schedule: "0 */2 * * *"
+      jobTemplate:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: sync
+                  image: registry.access.redhat.com/ubi9/ubi-minimal:9.3
+                  imagePullPolicy: IfNotPresent
+                  command:
+                    - /bin/sh
+                    - /scripts/sync.sh
+                  volumeMounts:
+                    - name: script-cm
+                      mountPath: /scripts
+              volumes:
+                - name: script-cm
+                  configMap:
+                    name: sync-nvd-script
+                    defaultMode: 0777
+              restartPolicy: OnFailure
 parameters:
   - name: APP_NAME
     displayName: Application name
