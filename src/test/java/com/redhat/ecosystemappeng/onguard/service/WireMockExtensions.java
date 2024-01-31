@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import jakarta.ws.rs.core.MediaType; 
+import jakarta.ws.rs.core.MediaType;
 
 public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
 
