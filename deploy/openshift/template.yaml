@@ -158,7 +158,7 @@ objects:
             spec:
               containers:
                 - name: sync
-                  image: registry.access.redhat.com/ubi9/ubi-minimal:9.3
+                  image: registry.redhat.io/ubi9/ubi-minimal:9.3
                   imagePullPolicy: IfNotPresent
                   command:
                     - /bin/sh
