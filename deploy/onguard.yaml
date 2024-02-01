@@ -104,7 +104,8 @@ data:
         elif [[ $status == "PROCESSING" ]]; then
             echo "There is an ongoing load. Skip"
         else
-            echo "Unknown load status ${load}"
+            echo "Unknown load status ${load}. Force reload"
+            curl -XPOST ${endpoint}
         fi
     else
         echo "Unexpected status code ${status_code}. Skip load and sync."
