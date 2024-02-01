@@ -44,7 +44,7 @@ public interface NvdApi {
     @GET
     @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Fallback(value = NvdFallbackService.class, skipOn = ClientWebApplicationException.class)
+    @Fallback(value = NvdFallbackService.class)
     @CircuitBreaker(delay = NVD_API_WINDOW_SECS, delayUnit = ChronoUnit.SECONDS)
     NvdResponse get(@QueryParam("cveId") String cveId);
 

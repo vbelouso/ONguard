@@ -83,23 +83,28 @@ metadata:
 data:
   sync.sh: |
     #!/bin/bash
-
     set -euo pipefail
-
-    status_code=$(curl --write-out '%{http_code}' --silent --output /dev/null http://onguard:9000/load)
+    endpoint=http://onguard:9000/load
+    status_code=$(curl --write-out '%{http_code}' --silent --output /dev/null ${endpoint})
 
     if [ ${status_code} == '404' ]; then
         echo Load data is empty
-        curl -XPOST http://onguard:9000/load
+        curl -XPOST ${endpoint}
     elif [ ${status_code} == '200' ]; then
-        load=$(curl -s http://onguard:9000/load)
+        load=$(curl -s ${endpoint})
         echo ${load}
-        if [[ $load == *"completed"* ]]; then
+        status=$(echo "$load" | sed -E 's/.*"status":"?([^,"]*)"?.*/\1/')
+        if [[ $status == "COMPLETED" ]]; then
             completed=$(echo "$load" | sed -E 's/.*"completed":"?([^,"]*)"?.*/\1/')
             echo "Completed load on ${completed}. Sync with most recent data"
-            curl -XPOST http://onguard:9000/load?since=${completed}
+            curl -XPOST ${endpoint}?since=${completed}
+        elif [[ $status == "COMPLETED_WITH_ERRORS" ]]; then
+            echo "Previous load completed with errors. Resume"
+            curl -XPOST ${endpoint}
+        elif [[ $status == "PROCESSING" ]]; then
+            echo "There is an ongoing load. Skip"
         else
-            echo "Load not yet completed"
+            echo "Unknown load status ${load}"
         fi
     else
         echo "Unexpected status code ${status_code}. Skip load and sync."
@@ -110,7 +115,7 @@ kind: CronJob
 metadata:
   name: sync-nvd-db
 spec:
-  schedule: "0 */2 * * *"
+  schedule: "*/30 * * * *"
   jobTemplate:
     spec:
       template:

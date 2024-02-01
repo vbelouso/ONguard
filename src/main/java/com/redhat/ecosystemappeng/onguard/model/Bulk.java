@@ -22,13 +22,21 @@ import java.time.LocalDateTime;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-public record Bulk(LocalDateTime started, LocalDateTime completed, Integer index, Integer pageSize) {
+public record Bulk(LocalDateTime started, LocalDateTime completed, Integer index, Integer pageSize, Status status) {
     
+    public static enum Status {
+        COMPLETED,
+        PROCESSING,
+        COMPLETED_WITH_ERRORS
+    }
+
     public static class Builder {
         LocalDateTime started;
         LocalDateTime completed;
         Integer index;
         Integer pageSize;
+        Status status;
+
 
         private Builder() {}
 
@@ -37,6 +45,7 @@ public record Bulk(LocalDateTime started, LocalDateTime completed, Integer index
             this.completed = other.completed;
             this.index = other.index;
             this.pageSize = other.pageSize;
+            this.status = other.status;
         }
 
         public Builder started(LocalDateTime started) {
@@ -56,11 +65,16 @@ public record Bulk(LocalDateTime started, LocalDateTime completed, Integer index
             return this;
         }
 
+        public Builder status(Status status) {
+            this.status = status;
+            return this;
+        }
+
         public Bulk build() {
             if(index == null) {
                 index = 0;
             }
-            return new Bulk(started, completed, index, pageSize);
+            return new Bulk(started, completed, index, pageSize, status);
         }
     }
 
