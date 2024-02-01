@@ -36,6 +36,7 @@ import com.redhat.ecosystemappeng.onguard.repository.VulnerabilityRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
 
 @ApplicationScoped
 public class NvdFallbackService implements FallbackHandler<NvdResponse> {
@@ -70,10 +71,28 @@ public class NvdFallbackService implements FallbackHandler<NvdResponse> {
 
     @Override
     public NvdResponse handle(ExecutionContext context) {
-        Uni.createFrom()
+        if(shouldHandle(context.getFailure())) {
+            Uni.createFrom()
                 .item((String) context.getParameters()[0])
                 .onItem().delayIt().by(Duration.ofSeconds(delay)).invoke(cveId -> updateMetrics(cveId))
                 .runSubscriptionOn(executor).subscribeAsCompletionStage();
+        }
         return new NvdResponse(0, 0, 0, null, null, new Date(), Collections.emptyList());
+    }
+
+    private boolean shouldHandle(Throwable failure) {
+        if(failure == null) {
+            return true;
+        }
+        var cause = failure;
+        if(failure.getCause() != null && !(failure instanceof WebApplicationException)) {
+            cause = failure.getCause();
+        }
+        if(cause instanceof WebApplicationException) {
+            var error = (WebApplicationException) cause;
+            var status = error.getResponse().getStatus();
+            return status != 404;
+        }
+        return true;
     }
 }

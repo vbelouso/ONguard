@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.ecosystemappeng.onguard.model.Bulk;
+import com.redhat.ecosystemappeng.onguard.model.Bulk.Status;
 import com.redhat.ecosystemappeng.onguard.repository.BulkRepository;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdService;
 
@@ -51,34 +52,50 @@ public class LoadService {
     Integer pageSize;
 
     public void loadFromNvdApi(LocalDateTime since) {
+        Bulk bulk = bulkRepository.get();
+        if (bulk == null) {
+            bulk = Bulk.builder().started(LocalDateTime.now(ZoneId.systemDefault())).pageSize(pageSize)
+                    .status(Status.PROCESSING).build();
+            LOGGER.info("Starting load of NVD database");
+        } else {
+            bulk = Bulk.builder(bulk).status(Status.PROCESSING).build();
+            LOGGER.info("Resuming load of NVD database");
+        }
+        bulkRepository.set(bulk);
         try {
-            Bulk bulk = bulkRepository.get();
-            while (bulk == null || bulk.completed() == null) {
-                if (bulk == null) {
-                    bulk = Bulk.builder().started(LocalDateTime.now(ZoneId.systemDefault())).pageSize(pageSize).build();
-                    LOGGER.info("Starting load of NVD database");
-                    bulkRepository.set(bulk);
-                }
+            while (Status.PROCESSING.equals(bulk.status())) {
                 var vulnerabilities = nvdService.bulkLoad(bulk.index(), pageSize, since);
                 var loaded = vulnerabilities.size();
                 LOGGER.info("Loaded {} elements from NVD", loaded);
-                Multi.createFrom().items(vulnerabilities.stream()).runSubscriptionOn(Infrastructure.getDefaultExecutor()).subscribe().with(vulnerabilityService::ingestNvdVulnerability);
+                Multi.createFrom().items(vulnerabilities.stream())
+                        .runSubscriptionOn(Infrastructure.getDefaultExecutor()).subscribe()
+                        .with(vulnerabilityService::ingestNvdVulnerability);
                 vulnerabilities.stream().parallel().forEach(vulnerabilityService::ingestNvdVulnerability);
-                
-                synchronized(this) {
+
+                synchronized (this) {
                     bulk = bulkRepository.get();
                     var builder = Bulk.builder(bulk).index(bulk.index() + loaded).pageSize(pageSize);
                     if (loaded < pageSize) {
                         var completed = LocalDateTime.now(ZoneId.systemDefault());
-                        builder.completed(completed);
-                        
+                        builder.completed(completed)
+                                .status(Status.COMPLETED);
+
                     }
                     bulkRepository.set(builder.build());
                 }
             }
             LOGGER.info("Load completed of {} elements", bulk.index());
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOGGER.error("Unable to complete Load", e);
+            synchronized (this) {
+                if (bulk != null) {
+                    bulk = Bulk.builder(bulk)
+                            .completed(LocalDateTime.now(ZoneId.systemDefault()))
+                            .status(Status.COMPLETED_WITH_ERRORS)
+                            .build();
+                    bulkRepository.set(bulk);
+                }
+            }
         }
     }
 
@@ -88,7 +105,7 @@ public class LoadService {
 
     public synchronized Bulk cancel() {
         var bulk = bulkRepository.get();
-        if(bulk == null) {
+        if (bulk == null) {
             return null;
         }
         bulk = Bulk.builder(bulk).completed(LocalDateTime.now(ZoneId.systemDefault())).build();
