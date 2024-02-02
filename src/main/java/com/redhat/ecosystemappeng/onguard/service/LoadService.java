@@ -66,7 +66,7 @@ public class LoadService {
             while (Status.PROCESSING.equals(bulk.status())) {
                 var vulnerabilities = nvdService.bulkLoad(bulk.index(), pageSize, since);
                 var loaded = vulnerabilities.size();
-                LOGGER.info("Loaded {} elements from NVD", loaded);
+                LOGGER.info("Loaded {} elements from NVD. Current load index: {}", loaded, bulk.index());
                 Multi.createFrom().items(vulnerabilities.stream())
                         .runSubscriptionOn(Infrastructure.getDefaultExecutor()).subscribe()
                         .with(vulnerabilityService::ingestNvdVulnerability);
