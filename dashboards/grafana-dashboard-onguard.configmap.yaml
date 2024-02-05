@@ -1880,7 +1880,7 @@ data:
     }
 kind: ConfigMap
 metadata:
-  name: grafana-dashboard-exhort
+  name: grafana-dashboard-onguard
   labels:
     grafana_dashboard: "true"
   annotations:
