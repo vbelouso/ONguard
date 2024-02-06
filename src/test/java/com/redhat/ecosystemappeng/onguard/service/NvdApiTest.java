@@ -29,13 +29,9 @@ import static com.redhat.ecosystemappeng.onguard.test.WireMockExtensions.VALID_C
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.redhat.ecosystemappeng.onguard.service.nvd.NvdApi;
-import com.redhat.ecosystemappeng.onguard.test.InjectWireMock;
 import com.redhat.ecosystemappeng.onguard.test.WireMockExtensions;
 
 import io.quarkus.test.common.QuarkusTestResource;
