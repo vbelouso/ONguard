@@ -147,7 +147,7 @@ objects:
                 echo "There is an ongoing load. Skip"
             else
                 echo "Unknown load status ${load}. Force reload."
-                curl -XPOST ${endpoint}
+                curl -XPOST ${endpoint}?reload=true
             fi
         else
             echo "Unexpected status code ${status_code}. Skip load and sync."

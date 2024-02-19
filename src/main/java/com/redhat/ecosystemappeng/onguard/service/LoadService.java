@@ -48,7 +48,7 @@ public class LoadService {
     @Inject
     BulkRepository bulkRepository;
 
-    @ConfigProperty(name = "load.pageSize", defaultValue = "200")
+    @ConfigProperty(name = "load.pageSize", defaultValue = "1000")
     Integer pageSize;
 
     public void loadFromNvdApi(LocalDateTime since) {

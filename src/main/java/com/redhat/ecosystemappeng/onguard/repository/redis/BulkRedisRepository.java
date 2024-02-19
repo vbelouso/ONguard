@@ -27,7 +27,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class BulkRedisRepository implements BulkRepository {
 
-    private static final String LOAD_RECORD = "load";
+    private static final String LOAD_RECORD = "load:status";
 
     private final ValueCommands<String, Bulk> bulkCommands;
 
