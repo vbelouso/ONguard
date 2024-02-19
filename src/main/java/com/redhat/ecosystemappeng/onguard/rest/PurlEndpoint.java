@@ -28,6 +28,7 @@ import com.redhat.ecosystemappeng.onguard.service.VulnerabilityService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 @Path("/purls")
 public class PurlEndpoint {
@@ -36,10 +37,10 @@ public class PurlEndpoint {
     VulnerabilityService svc;
 
     @POST
-    public Map<String, List<Vulnerability>> find(PurlsRequest request) {
+    public Map<String, List<Vulnerability>> find(PurlsRequest request, @QueryParam("reload") boolean reload) {
         if(request == null || request.purls() == null || request.purls().isEmpty()) {
             return Collections.emptyMap();
         }
-        return svc.findByPurls(request.purls());
+        return svc.findByPurls(request.purls(), reload);
     }
 }

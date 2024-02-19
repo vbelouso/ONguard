@@ -22,6 +22,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.status;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,30 +47,29 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
     public static final String NVD_API_PATH = "/rest/json/cves/2.0";
 
 
-    private WireMockServer wireMockServer;
+    private final WireMockServer server = new WireMockServer(options().dynamicPort());
 
     @Override
     public Map<String, String> start() {
-        wireMockServer = new WireMockServer();
-        wireMockServer.start();
+        server.start();
 
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
             .withQueryParam(CVE_PARAM, equalTo(VALID_CVE ))
             .willReturn(ok().withBodyFile("nvd-data/" + VALID_CVE + ".json")
             .withHeader(HttpHeader.CONTENT_TYPE.asString(), MediaType.APPLICATION_JSON)));
         
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
             .withQueryParam(CVE_PARAM, equalTo(ERROR_503_CVE))
             .willReturn(status(503)));
 
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
             .withQueryParam(CVE_PARAM, equalTo(NOT_FOUND))
             .willReturn(status(404)));
             
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
             .withQueryParam("startIndex", equalTo("0"))
             .withQueryParam("resultsPerPage", equalTo("200"))
@@ -78,7 +78,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
             .willReturn(ok().withBodyFile("nvd-data/" + VALID_CVE + ".json")
             .withHeader(HttpHeader.CONTENT_TYPE.asString(), MediaType.APPLICATION_JSON)));
         
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .inScenario("List Retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
@@ -89,7 +89,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
             .willReturn(status(503))
             .willSetStateTo("Next"));
 
-        wireMockServer.stubFor(get(urlPathEqualTo(NVD_API_PATH))
+        server.stubFor(get(urlPathEqualTo(NVD_API_PATH))
             .inScenario("List Retry")
             .whenScenarioStateIs("Next")
             .withHeader(API_KEY_PARAM, equalTo(NVD_API_KEY))
@@ -101,7 +101,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
             .withHeader(HttpHeader.CONTENT_TYPE.asString(), MediaType.APPLICATION_JSON)));
 
         Map<String, String> props = new HashMap<>();
-        props.put("quarkus.rest-client.nvd-api.url", wireMockServer.baseUrl());
+        props.put("quarkus.rest-client.nvd-api.url", server.baseUrl());
         props.put("api.nvd.apikey", NVD_API_KEY);
         return props;
     }
@@ -110,13 +110,13 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public void stop() {
-        if(wireMockServer != null) {
-            wireMockServer.stop();
+        if(server != null) {
+            server.stop();
         }
     }
 
     @Override
     public void inject(TestInjector testInjector) {
-        testInjector.injectIntoFields(wireMockServer, new TestInjector.AnnotatedAndMatchesType(InjectWireMock.class, WireMockServer.class));
+        testInjector.injectIntoFields(server, new TestInjector.AnnotatedAndMatchesType(InjectWireMock.class, WireMockServer.class));
     }
 }
