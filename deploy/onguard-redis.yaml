@@ -28,9 +28,14 @@ spec:
         volumeMounts:
           - name: logs
             mountPath: /redisinsight/logs
+          - name: data
+            mountPath: /data
       volumes:
         - name: logs
           emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: redis-data
 ---
 apiVersion: v1
 kind: Service
@@ -44,9 +49,21 @@ spec:
     port: 6379
     protocol: TCP
     targetPort: 6379
-  - name: management
+  - name: http
     port: 8001
     protocol: TCP
     targetPort: 8001
   selector:
     app: redis
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+spec:
+  storageClassName: gp2
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi

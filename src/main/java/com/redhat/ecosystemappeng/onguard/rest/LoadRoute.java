@@ -17,9 +17,9 @@
  */
 package com.redhat.ecosystemappeng.onguard.rest;
 
-import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +49,11 @@ public class LoadRoute {
     public void registerManagementRoutes(@Observes ManagementInterface mi) {
         mi.router().post("/load").handler(ctx -> {
             final LocalDateTime since;
+            final LocalDateTime reloadBefore;
             try {
                 since = parseDateParam(ctx.request().getParam("since"));
-            } catch (ParseException e) {
+                reloadBefore = parseDateParam(ctx.request().getParam("reload_before"));
+            } catch (DateTimeParseException e) {
                 ctx.response().setStatusCode(400).setStatusMessage(e.getMessage()).end();
                 return;
             }
@@ -59,12 +61,15 @@ public class LoadRoute {
             Uni.createFrom()
                     .voidItem()
                     .invoke(() -> {
-                        if(reload) {
+                        if(reloadBefore != null) {
+                          var bulk = loadService.get();
+                          if(bulk != null && bulk.completed()!= null && reloadBefore.isBefore(bulk.completed())) {
                             loadService.restart();
-                        } else {
-                            loadService.loadFromNvdApi(since);
+                          }
+                        } else if(reload) {
+                            loadService.restart();
                         }
-                        
+                        loadService.loadFromNvdApi(since);
                     })
                     .runSubscriptionOn(Infrastructure.getDefaultExecutor())
                     .subscribeAsCompletionStage()
@@ -107,7 +112,7 @@ public class LoadRoute {
         });
     }
 
-    private LocalDateTime parseDateParam(String param) throws ParseException {
+    private LocalDateTime parseDateParam(String param) throws DateTimeParseException {
         if(param != null) {
            return LocalDateTime.parse(param, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }

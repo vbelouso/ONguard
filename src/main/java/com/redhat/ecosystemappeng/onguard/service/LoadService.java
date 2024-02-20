@@ -70,8 +70,6 @@ public class LoadService {
                 Multi.createFrom().items(vulnerabilities.stream())
                         .runSubscriptionOn(Infrastructure.getDefaultExecutor()).subscribe()
                         .with(vulnerabilityService::ingestNvdVulnerability);
-                vulnerabilities.stream().parallel().forEach(vulnerabilityService::ingestNvdVulnerability);
-
                 synchronized (this) {
                     bulk = bulkRepository.get();
                     var builder = Bulk.builder(bulk).index(bulk.index() + loaded).pageSize(pageSize);
@@ -79,7 +77,6 @@ public class LoadService {
                         var completed = LocalDateTime.now(ZoneId.systemDefault());
                         builder.completed(completed)
                                 .status(Status.COMPLETED);
-
                     }
                     bulkRepository.set(builder.build());
                 }
@@ -114,8 +111,7 @@ public class LoadService {
     }
 
     public void restart() {
-        bulkRepository.remove();
-        loadFromNvdApi(null);
+        vulnerabilityService.cleanUp();
     }
 
 }

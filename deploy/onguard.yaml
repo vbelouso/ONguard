@@ -89,7 +89,7 @@ data:
 
     if [ ${status_code} == '404' ]; then
         echo Load data is empty
-        curl -XPOST ${endpoint}
+        curl -s -XPOST ${endpoint}
     elif [ ${status_code} == '200' ]; then
         load=$(curl -s ${endpoint})
         echo ${load}
@@ -97,19 +97,31 @@ data:
         if [[ $status == "COMPLETED" ]]; then
             completed=$(echo "$load" | sed -E 's/.*"completed":"?([^,"]*)"?.*/\1/')
             echo "Completed load on ${completed}. Sync with most recent data"
-            curl -XPOST ${endpoint}?since=${completed}
+            curl -s -XPOST ${endpoint}?since=${completed}
         elif [[ $status == "COMPLETED_WITH_ERRORS" ]]; then
             echo "Previous load completed with errors. Resume"
-            curl -XPOST ${endpoint}
+            curl -s -XPOST ${endpoint}
         elif [[ $status == "PROCESSING" ]]; then
             echo "There is an ongoing load. Skip"
         else
             echo "Unknown load status ${load}. Force reload"
-            curl -XPOST ${endpoint}?reload=true
+            curl -s -XPOST ${endpoint}?reload=true
         fi
     else
         echo "Unexpected status code ${status_code}. Skip load and sync."
     fi
+  force_reload.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    endpoint=http://onguard:9000/load
+    force_reload_date=2024-02-20T00:00:00
+
+    for i in {1..5}; do
+      echo retry $i
+      curl -s -XPOST ${endpoint}?reload_before=${force_reload_date} && exit 0
+      sleep 1
+    done
+    exit 1
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -138,3 +150,28 @@ spec:
                 defaultMode: 0777
           restartPolicy: OnFailure
               
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reload-nvd-db
+spec:
+  template:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      containers:
+        - name: sync
+          image: registry.access.redhat.com/ubi9/ubi-minimal:9.3
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - /scripts/force_reload.sh
+          volumeMounts:
+            - name: script-cm
+              mountPath: /scripts
+      volumes:
+        - name: script-cm
+          configMap:
+            name: sync-nvd-script
+            defaultMode: 0777
+      restartPolicy: OnFailure

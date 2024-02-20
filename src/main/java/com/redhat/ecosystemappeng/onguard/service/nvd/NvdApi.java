@@ -39,7 +39,7 @@ import jakarta.ws.rs.core.MediaType;
 public interface NvdApi {
 
     static final long NVD_API_WINDOW_SECS = 30;
-    static final String SIMPLE_ISO_8601 = "yyyy-MM-dd";
+
     @GET
     @ClientHeaderParam(name = "apiKey", value = "${api.nvd.apikey}")
     @Produces(MediaType.APPLICATION_JSON)
