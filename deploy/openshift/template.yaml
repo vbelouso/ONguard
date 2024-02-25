@@ -184,6 +184,13 @@ objects:
                   volumeMounts:
                     - name: script-cm
                       mountPath: /scripts
+                  resources:
+                    limits:
+                      cpu: 500m
+                      memory: 512Mi
+                    requests:
+                      cpu: 100m
+                      memory: 10Mi
               volumes:
                 - name: script-cm
                   configMap:
@@ -207,6 +214,13 @@ objects:
               volumeMounts:
                 - name: script-cm
                   mountPath: /scripts
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 10Mi
           volumes:
             - name: script-cm
               configMap:
