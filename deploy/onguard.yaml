@@ -148,8 +148,7 @@ spec:
               configMap:
                 name: sync-nvd-script
                 defaultMode: 0777
-          restartPolicy: OnFailure
-              
+          restartPolicy: OnFailure          
 ---
 apiVersion: batch/v1
 kind: Job

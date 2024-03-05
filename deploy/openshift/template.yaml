@@ -204,6 +204,7 @@ objects:
     spec:
       template:
         spec:
+          ttlSecondsAfterFinished: 3600
           containers:
             - name: sync
               image: quay.io/app-sre/ubi9-ubi-minimal:9.3
